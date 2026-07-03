@@ -21,16 +21,41 @@ interface AnalyzedItem {
   multiplier: number;
 }
 
-function fileToBase64(file: File): Promise<string> {
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] ?? "");
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not decode image"));
+    img.src = URL.createObjectURL(file);
   });
+}
+
+/**
+ * Real phone camera photos run several MB — well past the server action body
+ * limit and slow to upload/analyze. Downscale through canvas (also
+ * re-encodes HEIC/whatever-the-camera-gave-us as a plain JPEG) before
+ * sending.
+ */
+async function compressImage(
+  file: File,
+  maxDimension = 1568,
+  quality = 0.85
+): Promise<{ dataUrl: string; base64: string }> {
+  const img = await loadImage(file);
+  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+  const width = Math.round(img.width * scale);
+  const height = Math.round(img.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.drawImage(img, 0, 0, width, height);
+  URL.revokeObjectURL(img.src);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  return { dataUrl, base64: dataUrl.split(",")[1] ?? "" };
 }
 
 export function PhotoScanTab({
@@ -50,15 +75,14 @@ export function PhotoScanTab({
   const [pending, startTransition] = useTransition();
 
   async function handleFile(file: File) {
-    setPreviewUrl(URL.createObjectURL(file));
     setAnalysis(null);
     setItems([]);
     setAnalyzing(true);
 
     try {
-      const mediaType = file.type === "image/png" || file.type === "image/webp" ? file.type : "image/jpeg";
-      const base64 = await fileToBase64(file);
-      const result = await analyzeFoodPhotoAction(base64, mediaType);
+      const { dataUrl, base64 } = await compressImage(file);
+      setPreviewUrl(dataUrl);
+      const result = await analyzeFoodPhotoAction(base64, "image/jpeg");
       setAnalysis(result);
       setItems(result.items.map((item) => ({ ...item, included: true, multiplier: 1 })));
     } catch {
