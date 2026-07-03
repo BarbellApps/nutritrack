@@ -3,7 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import type { IScannerControls } from "@zxing/browser";
+import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { Loader2, CameraOff } from "lucide-react";
+
+// Restrict to formats real product packaging actually uses. Leaving every
+// format (QR, Aztec, Data Matrix, ...) enabled makes zxing much more prone to
+// false-positive decodes off random textures/text in frame, which was
+// tripping the "not found" flow before a real barcode was ever in view.
+const PRODUCT_BARCODE_HINTS = new Map([
+  [
+    DecodeHintType.POSSIBLE_FORMATS,
+    [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128,
+    ],
+  ],
+]);
 
 export function BarcodeScanner({ onDetected }: { onDetected: (code: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -13,7 +31,7 @@ export function BarcodeScanner({ onDetected }: { onDetected: (code: string) => v
   useEffect(() => {
     let controls: IScannerControls | undefined;
     let cancelled = false;
-    const reader = new BrowserMultiFormatReader();
+    const reader = new BrowserMultiFormatReader(PRODUCT_BARCODE_HINTS);
 
     reader
       .decodeFromConstraints(

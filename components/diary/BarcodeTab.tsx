@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,20 +10,36 @@ import { lookupBarcode, createCustomFood } from "@/lib/actions/foods";
 import { BarcodeScanner } from "./BarcodeScanner";
 import type { Food } from "@/types";
 
-type Phase = "scanning" | "looking-up" | "not-found" | "manual-form";
-
+// A held-up barcode gets decoded many times a second while it's in frame, so
+// track in-flight/recently-missed codes to avoid re-querying (and re-toasting)
+// on every frame. The camera stays mounted through a miss — a single
+// misread frame should never require the user to explicitly restart scanning.
 export function BarcodeTab({ onFound }: { onFound: (food: Food) => void }) {
-  const [phase, setPhase] = useState<Phase>("scanning");
-  const [code, setCode] = useState<string | null>(null);
+  const [manualEntry, setManualEntry] = useState(false);
+  const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
+  const [looking, setLooking] = useState(false);
   const [pending, startTransition] = useTransition();
+  const inFlight = useRef<Set<string>>(new Set());
+  const recentMisses = useRef<Map<string, number>>(new Map());
 
   function handleDetected(detected: string) {
-    setCode(detected);
-    setPhase("looking-up");
+    if (inFlight.current.has(detected)) return;
+    const missedAt = recentMisses.current.get(detected);
+    if (missedAt && Date.now() - missedAt < 4000) return;
+
+    inFlight.current.add(detected);
+    setLooking(true);
     startTransition(async () => {
       const food = await lookupBarcode(detected).catch(() => null);
-      if (food) onFound(food);
-      else setPhase("not-found");
+      inFlight.current.delete(detected);
+      setLooking(false);
+      if (food) {
+        onFound(food);
+      } else {
+        recentMisses.current.set(detected, Date.now());
+        setNotFoundCode(detected);
+        toast.error("Product not found for that barcode");
+      }
     });
   }
 
@@ -32,7 +48,7 @@ export function BarcodeTab({ onFound }: { onFound: (food: Food) => void }) {
       try {
         const food = await createCustomFood({
           name: String(formData.get("name")),
-          barcode: code ?? undefined,
+          barcode: notFoundCode ?? undefined,
           servingSize: Number(formData.get("servingSize")) || 100,
           servingUnit: String(formData.get("servingUnit") || "g"),
           calories: Number(formData.get("calories")) || 0,
@@ -48,33 +64,29 @@ export function BarcodeTab({ onFound }: { onFound: (food: Food) => void }) {
     });
   }
 
-  if (phase === "scanning" || phase === "looking-up") {
+  if (!manualEntry) {
     return (
-      <div>
+      <div className="flex flex-col gap-2">
         <BarcodeScanner onDetected={handleDetected} />
-        {phase === "looking-up" && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">Looking up…</p>
+        {looking && (
+          <p className="text-center text-xs text-muted-foreground">Looking up…</p>
         )}
-      </div>
-    );
-  }
-
-  if (phase === "not-found") {
-    return (
-      <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border py-10 text-center">
-        <PackageSearch className="size-8 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium">No product found</p>
-          <p className="text-xs text-muted-foreground">
-            Barcode {code} isn&apos;t in the food database yet.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPhase("scanning")}>
-            Scan again
-          </Button>
-          <Button onClick={() => setPhase("manual-form")}>Add manually</Button>
-        </div>
+        {!looking && notFoundCode && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs">
+            <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+              <PackageSearch className="size-3.5 shrink-0" />
+              <span className="truncate">{notFoundCode} not found — keep scanning, or</span>
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={() => setManualEntry(true)}
+            >
+              Add manually
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -82,7 +94,9 @@ export function BarcodeTab({ onFound }: { onFound: (food: Food) => void }) {
   return (
     <form action={handleManualSave} className="flex flex-col gap-3">
       <p className="text-xs text-muted-foreground">
-        Barcode {code} — saved with these details so scanning it again is instant.
+        {notFoundCode
+          ? `Barcode ${notFoundCode} — saved with these details so scanning it again is instant.`
+          : "Add this food manually."}
       </p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bcName">Name</Label>
@@ -117,7 +131,7 @@ export function BarcodeTab({ onFound }: { onFound: (food: Food) => void }) {
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => setPhase("not-found")}>
+        <Button type="button" variant="ghost" onClick={() => setManualEntry(false)}>
           Back
         </Button>
         <Button type="submit" disabled={pending}>
