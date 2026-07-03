@@ -12,11 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { lookupBarcode } from "@/lib/actions/foods";
 import { addFoodLog } from "@/lib/actions/logs";
 import { scaleNutrition } from "@/lib/utils/nutrition";
 import { todayStr } from "@/lib/utils/date";
-import { BarcodeScanner } from "./BarcodeScanner";
+import { BarcodeTab } from "./BarcodeTab";
 import { PhotoScanTab } from "./PhotoScanTab";
 import { ServingPicker } from "./ServingPicker";
 import type { Food, MealType } from "@/types";
@@ -40,7 +39,7 @@ export function QuickScanDialog() {
   const [open, setOpen] = useState(false);
   const [mealType, setMealType] = useState<MealType>(defaultMeal);
   const [selected, setSelected] = useState<Food | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const loggedDate = todayStr();
 
   function reset() {
@@ -143,18 +142,7 @@ export function QuickScanDialog() {
               </TabsContent>
 
               <TabsContent value="barcode">
-                <BarcodeScanner
-                  onDetected={(code) => {
-                    startTransition(async () => {
-                      const food = await lookupBarcode(code).catch(() => null);
-                      if (food) setSelected(food);
-                      else toast.error("Product not found for that barcode");
-                    });
-                  }}
-                />
-                {pending && (
-                  <p className="mt-2 text-center text-xs text-muted-foreground">Looking up…</p>
-                )}
+                <BarcodeTab onFound={setSelected} />
               </TabsContent>
             </Tabs>
           </div>

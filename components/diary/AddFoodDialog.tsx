@@ -13,11 +13,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchFoods, lookupBarcode } from "@/lib/actions/foods";
+import { searchFoods } from "@/lib/actions/foods";
 import { addFoodLog } from "@/lib/actions/logs";
 import { logRecipeAsMeal } from "@/lib/actions/recipes";
 import { scaleNutrition } from "@/lib/utils/nutrition";
-import { BarcodeScanner } from "./BarcodeScanner";
+import { BarcodeTab } from "./BarcodeTab";
 import { PhotoScanTab } from "./PhotoScanTab";
 import { ServingPicker } from "./ServingPicker";
 import type { Favorite, Food, MealType, Recipe } from "@/types";
@@ -56,7 +56,7 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
   const [results, setResults] = useState<Food[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Food | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (query.trim().length < 2) return;
@@ -192,18 +192,7 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
             </TabsContent>
 
             <TabsContent value="barcode">
-              <BarcodeScanner
-                onDetected={(code) => {
-                  startTransition(async () => {
-                    const food = await lookupBarcode(code).catch(() => null);
-                    if (food) setSelected(food);
-                    else toast.error("Product not found for that barcode");
-                  });
-                }}
-              />
-              {pending && (
-                <p className="mt-2 text-center text-xs text-muted-foreground">Looking up…</p>
-              )}
+              <BarcodeTab onFound={setSelected} />
             </TabsContent>
 
             <TabsContent value="photo">

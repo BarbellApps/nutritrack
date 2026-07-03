@@ -111,6 +111,7 @@ export async function lookupBarcode(barcode: string): Promise<Food | null> {
 export interface CustomFoodInput {
   name: string;
   brand?: string;
+  barcode?: string;
   servingSize: number;
   servingUnit: string;
   calories: number;
@@ -131,6 +132,7 @@ export async function createCustomFood(input: CustomFoodInput): Promise<Food> {
       user_id: userId,
       name: input.name,
       brand: input.brand || null,
+      barcode: input.barcode || null,
       serving_size: input.servingSize,
       serving_unit: input.servingUnit,
       calories: input.calories,

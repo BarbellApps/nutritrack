@@ -20,7 +20,7 @@
 |------|---------------|
 | Diary | Log food to breakfast/lunch/dinner/snacks for any day; see calories remaining and macro progress |
 | Food search | Search a shared food library (cached from Open Food Facts) plus your own custom foods |
-| Barcode scanner | Scan a packaged product with the camera to pull nutrition facts instantly (`@zxing/browser` + Open Food Facts API) |
+| Barcode scanner | Scan a packaged product with the camera to pull nutrition facts instantly (`@zxing/browser` + Open Food Facts API). If the barcode isn't in Open Food Facts (or the scanner misreads it), falls back to a manual-entry form that caches the entry by barcode so a repeat scan is instant next time (`components/diary/BarcodeTab.tsx`) |
 | AI photo scan | Take or upload a food photo; Claude (vision + structured outputs) identifies each item and estimates calories/macros for review before logging |
 | Custom foods & recipes | Save your own foods, and build multi-ingredient recipes that compute total nutrition automatically |
 | Favorites | Star foods for one-tap re-logging |
