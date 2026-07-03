@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface AuthResult {
   error?: string;
@@ -26,20 +27,26 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("fullName") ?? "");
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  // TEMPORARY (testing): the project's default mailer enforces a strict rate
+  // limit inside auth.signUp() itself, before a session/confirmation branch
+  // is even reached. Creating the user pre-confirmed via the admin API skips
+  // the email step entirely instead of hitting that limit. Revert to
+  // supabase.auth.signUp() once email confirmation is properly configured
+  // (custom SMTP) for launch.
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
-    options: { data: { full_name: fullName } },
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
   });
 
   if (error) return { error: error.message };
+  if (!data.user) return { error: "Could not create account" };
 
-  // Email confirmation is enabled on the project — signUp succeeds but
-  // returns no session until the user clicks the confirmation link.
-  if (!data.session) {
-    return { message: "Check your email to confirm your account, then log in." };
-  }
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  if (signInError) return { error: signInError.message };
 
   redirect("/dashboard");
 }
