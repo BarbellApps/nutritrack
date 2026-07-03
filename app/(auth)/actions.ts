@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export interface AuthResult {
   error?: string;
+  message?: string;
 }
 
 export async function signIn(formData: FormData): Promise<AuthResult> {
@@ -26,13 +27,20 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   const fullName = String(formData.get("fullName") ?? "");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: fullName } },
   });
 
   if (error) return { error: error.message };
+
+  // Email confirmation is enabled on the project — signUp succeeds but
+  // returns no session until the user clicks the confirmation link.
+  if (!data.session) {
+    return { message: "Check your email to confirm your account, then log in." };
+  }
+
   redirect("/dashboard");
 }
 
