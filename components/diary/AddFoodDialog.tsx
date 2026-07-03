@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat } from "lucide-react";
+import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat, Camera } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import { addFoodLog } from "@/lib/actions/logs";
 import { logRecipeAsMeal } from "@/lib/actions/recipes";
 import { scaleNutrition } from "@/lib/utils/nutrition";
 import { BarcodeScanner } from "./BarcodeScanner";
+import { PhotoScanTab } from "./PhotoScanTab";
 import type { Favorite, Food, MealType, Recipe } from "@/types";
 
 interface Props {
@@ -199,12 +200,15 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
           />
         ) : (
           <Tabs defaultValue="search">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="search">
                 <Search className="size-4" />
               </TabsTrigger>
               <TabsTrigger value="barcode">
                 <Barcode className="size-4" />
+              </TabsTrigger>
+              <TabsTrigger value="photo">
+                <Camera className="size-4" />
               </TabsTrigger>
               <TabsTrigger value="favorites">
                 <Star className="size-4" />
@@ -259,6 +263,17 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
               {pending && (
                 <p className="mt-2 text-center text-xs text-muted-foreground">Looking up…</p>
               )}
+            </TabsContent>
+
+            <TabsContent value="photo">
+              <PhotoScanTab
+                mealType={mealType}
+                loggedDate={loggedDate}
+                onLogged={() => {
+                  setOpen(false);
+                  reset();
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="favorites" className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">

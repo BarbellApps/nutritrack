@@ -21,6 +21,7 @@
 | Diary | Log food to breakfast/lunch/dinner/snacks for any day; see calories remaining and macro progress |
 | Food search | Search a shared food library (cached from Open Food Facts) plus your own custom foods |
 | Barcode scanner | Scan a packaged product with the camera to pull nutrition facts instantly (`@zxing/browser` + Open Food Facts API) |
+| AI photo scan | Take or upload a food photo; Claude (vision + structured outputs) identifies each item and estimates calories/macros for review before logging |
 | Custom foods & recipes | Save your own foods, and build multi-ingredient recipes that compute total nutrition automatically |
 | Favorites | Star foods for one-tap re-logging |
 | Water tracking | Quick-add buttons + custom amount, daily goal ring, 7-day history chart |
@@ -42,6 +43,7 @@
 | Charts | Recharts (via shadcn `chart` wrapper) |
 | Barcode scanning | `@zxing/browser` (camera-based, client-only) |
 | Food data | Open Food Facts public API (barcode lookup + search fallback), cached into `foods` |
+| AI vision | Anthropic API (`claude-opus-4-8`), structured outputs via `output_config.format` for guaranteed-valid JSON |
 | PWA | `app/manifest.ts` + hand-rolled `public/sw.js` service worker |
 | Hosting | Vercel (recommended) |
 
@@ -68,11 +70,15 @@ Copy `.env.example` to `.env.local` and fill in:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+ANTHROPIC_API_KEY=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 No API key is needed for Open Food Facts (public API, rate-limited — a
 descriptive `User-Agent` is sent on every request per their usage policy).
+`ANTHROPIC_API_KEY` powers the AI photo-scan feature (`lib/anthropic/`) —
+without it, every other feature still works; only the photo tab in Add Food
+will fail.
 
 ---
 
@@ -116,13 +122,14 @@ nutritrack/
 │   └── layout.tsx
 ├── components/
 │   ├── ui/                     # shadcn primitives
-│   ├── diary/                  # DateNav, CalorieSummary, MealSection, AddFoodDialog, BarcodeScanner
+│   ├── diary/                  # DateNav, CalorieSummary, MealSection, AddFoodDialog, BarcodeScanner, PhotoScanTab
 │   ├── water/  weight/  foods/ settings/  auth/  layout/  pwa/
 ├── lib/
 │   ├── supabase/                # client.ts (browser), server.ts (RSC), admin.ts (service role), proxy.ts
-│   ├── actions/                  # "use server" mutations: foods, logs, water, weight, recipes, favorites, profile
+│   ├── actions/                  # "use server" mutations: foods, logs, water, weight, recipes, favorites, profile, vision
 │   ├── data/                     # server-only read helpers used directly by pages (profile, diary, weight, foods)
 │   ├── off/client.ts             # Open Food Facts API client
+│   ├── anthropic/                # client.ts, food-vision.ts (photo → structured nutrition estimate)
 │   └── utils/                    # nutrition.ts (macro/TDEE math), date.ts
 ├── types/index.ts
 ├── proxy.ts                      # Next 16 middleware replacement — route protection
@@ -229,6 +236,7 @@ tokens.
 - [x] Water tracking + 7-day chart
 - [x] Weight tracking + trend chart
 - [x] Settings: goals, units, activity level, TDEE estimate
+- [x] AI photo scan: upload/capture a food photo, Claude vision estimates items + macros, review before logging
 
 ### Phase 3 — Polish + Launch (not started)
 - [ ] Real Google OAuth credentials configured in Supabase
