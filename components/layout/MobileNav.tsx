@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav-items";
+import { QuickScanDialog } from "@/components/diary/QuickScanDialog";
 
 export function MobileNav() {
   const pathname = usePathname();
@@ -28,13 +28,7 @@ export function MobileNav() {
         );
       })}
 
-      <Link
-        href="/dashboard"
-        aria-label="Quick add"
-        className="absolute -top-6 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
-      >
-        <Plus className="size-6" />
-      </Link>
+      <QuickScanDialog />
     </nav>
   );
 }
