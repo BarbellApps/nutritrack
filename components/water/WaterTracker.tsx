@@ -57,7 +57,7 @@ export function WaterTracker({
             </svg>
             <div className="absolute flex flex-col items-center">
               <Droplets className="mb-1 size-5 text-[color:var(--chart-5)]" />
-              <span className="font-mono text-xl font-semibold">{(total / 1000).toFixed(2)}L</span>
+              <span className="text-xl font-bold">{(total / 1000).toFixed(2)}L</span>
               <span className="text-xs text-muted-foreground">of {(goalMl / 1000).toFixed(1)}L</span>
             </div>
           </div>
@@ -100,7 +100,7 @@ export function WaterTracker({
                       minute: "2-digit",
                     })}
                   </span>
-                  <span className="font-mono">{log.amount_ml}ml</span>
+                  <span className="font-medium">{log.amount_ml}ml</span>
                   <button
                     type="button"
                     className="text-muted-foreground/60 hover:text-destructive"

@@ -59,7 +59,7 @@ export function WeightTracker({
           <div className="flex items-end justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Current</p>
-              <p className="font-mono text-3xl font-semibold">
+              <p className="text-3xl font-bold">
                 {displayLatest !== null ? `${displayLatest} ${unit}` : "—"}
               </p>
               {delta !== null && (
@@ -80,7 +80,7 @@ export function WeightTracker({
             {goalWeightKg && (
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Goal</p>
-                <p className="font-mono text-lg">
+                <p className="text-lg font-semibold">
                   {unit === "lb" ? kgToLb(goalWeightKg) : goalWeightKg} {unit}
                 </p>
               </div>
@@ -116,7 +116,7 @@ export function WeightTracker({
               .map((log) => (
                 <div key={log.id} className="flex items-center justify-between py-1 text-sm">
                   <span className="text-muted-foreground">{log.logged_date}</span>
-                  <span className="font-mono">
+                  <span className="font-medium">
                     {unit === "lb" ? kgToLb(log.weight_kg) : log.weight_kg} {unit}
                   </span>
                   <button

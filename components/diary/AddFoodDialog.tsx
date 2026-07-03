@@ -80,7 +80,7 @@ function ServingPicker({
           className="w-24"
         />
       </div>
-      <div className="grid grid-cols-4 gap-2 font-mono text-xs">
+      <div className="grid grid-cols-4 gap-2 text-xs">
         <div>
           <p className="text-muted-foreground">Cal</p>
           <p>{scaled.calories}</p>

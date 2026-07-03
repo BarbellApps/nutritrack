@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface Props {
   caloriesEaten: number;
@@ -13,13 +12,13 @@ function MacroBar({ label, value, goal, colorVar }: { label: string; value: numb
   const pct = goal > 0 ? Math.min(100, Math.round((value / goal) * 100)) : 0;
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between text-xs">
-        <span className="font-medium text-foreground">{label}</span>
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-foreground">{label}</span>
         <span className="text-muted-foreground">
           {Math.round(value)} / {Math.round(goal)}g
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, backgroundColor: `var(${colorVar})` }}
@@ -35,47 +34,61 @@ export function CalorieSummary({ caloriesEaten, calorieGoal, protein, carbs, fat
   const over = remaining < 0;
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-6 pt-6 sm:flex-row sm:items-center">
-        <div className="relative mx-auto flex size-36 shrink-0 items-center justify-center">
-          <svg viewBox="0 0 100 100" className="size-36 -rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--muted)" strokeWidth="10" />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative flex size-64 items-center justify-center">
+          <svg viewBox="0 0 100 100" className="size-64 -rotate-90">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--muted)" strokeWidth="8" />
             <circle
               cx="50"
               cy="50"
               r="42"
               fill="none"
-              stroke={over ? "var(--destructive)" : "var(--primary)"}
-              strokeWidth="10"
+              stroke={over ? "var(--destructive)" : "var(--chart-1)"}
+              strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 42}`}
               strokeDashoffset={`${2 * Math.PI * 42 * (1 - pct / 100)}`}
             />
           </svg>
           <div className="absolute flex flex-col items-center">
-            <span className={cn("font-mono text-2xl font-semibold", over && "text-destructive")}>
-              {Math.abs(Math.round(remaining))}
+            <span className="text-4xl font-bold tracking-tight">
+              {Math.abs(Math.round(remaining)).toLocaleString()}
             </span>
-            <span className="text-xs text-muted-foreground">{over ? "over" : "left"}</span>
+            <span className="text-sm text-muted-foreground">{over ? "kcal over" : "kcal left"}</span>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Eaten</span>
-            <span className="font-mono font-medium">{Math.round(caloriesEaten)} kcal</span>
+        <div className="grid w-full grid-cols-3 divide-x divide-border border-t border-border pt-4 text-center">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-lg font-bold">{Math.round(caloriesEaten).toLocaleString()}</span>
+            <span className="text-xs tracking-wide text-muted-foreground uppercase">Eaten</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Goal</span>
-            <span className="font-mono font-medium">{Math.round(calorieGoal)} kcal</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs tracking-wide text-muted-foreground uppercase">Goals</span>
+            <span className="text-sm font-semibold text-primary">
+              {Math.round(calorieGoal).toLocaleString()} kcal
+            </span>
           </div>
-          <div className="mt-1 flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-lg font-bold">
+              {Math.max(0, Math.round(remaining)).toLocaleString()}
+            </span>
+            <span className="text-xs tracking-wide text-muted-foreground uppercase">Remaining</span>
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-6">
+          <h3 className="font-semibold">Macronutrients</h3>
+          <div className="flex flex-col gap-3">
             <MacroBar label="Protein" value={protein.value} goal={protein.goal} colorVar="--chart-2" />
             <MacroBar label="Carbs" value={carbs.value} goal={carbs.goal} colorVar="--chart-3" />
             <MacroBar label="Fat" value={fat.value} goal={fat.goal} colorVar="--chart-4" />
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

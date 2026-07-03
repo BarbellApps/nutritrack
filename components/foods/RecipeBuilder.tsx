@@ -155,7 +155,7 @@ export function RecipeBuilder() {
                     className="flex items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-accent/40"
                   >
                     <span className="truncate">{f.name}</span>
-                    <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {Math.round(f.calories)} kcal
                     </span>
                   </button>
@@ -170,7 +170,7 @@ export function RecipeBuilder() {
                 <div key={idx} className="flex items-center justify-between text-sm">
                   <span className="truncate">{ing.name}</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {Math.round(ing.calories)} kcal
                     </span>
                     <button type="button" onClick={() => removeIngredient(idx)}>

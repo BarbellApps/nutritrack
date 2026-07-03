@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Log meals, scan barcodes, and track calories, macros, water, and weight.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#0f2e1e",
-    theme_color: "#1a5c3a",
+    background_color: "#f4fcee",
+    theme_color: "#0b6e2c",
     icons: [
       { src: "/icon-192", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-192", sizes: "192x192", type: "image/png", purpose: "maskable" },
