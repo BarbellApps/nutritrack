@@ -22,7 +22,7 @@ export default async function FoodsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Foods</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Foods</h1>
 
       <Tabs defaultValue="mine">
         <TabsList className="grid w-full grid-cols-3">

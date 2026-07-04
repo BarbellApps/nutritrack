@@ -3,7 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { createAnthropicClient } from "./client";
 
 const FoodItemSchema = z.object({
-  name: z.string().describe("Short name of the food or dish"),
+  name: z.string().describe("Short name of the specific ingredient or component, e.g. \"Grilled chicken\", \"Caesar dressing\", \"Croutons\" — not the whole dish"),
   estimated_amount: z
     .string()
     .describe('Estimated portion, e.g. "1 cup", "150g", "1 medium fillet"'),
@@ -25,9 +25,13 @@ export type FoodPhotoAnalysis = z.infer<typeof FoodPhotoAnalysisSchema>;
 
 const PROMPT = `You are a nutrition expert analyzing a photo of food for a calorie tracking app.
 
-Identify each separately-eaten food or dish visible in the photo — items a person would log as distinct entries. For each one, estimate a realistic serving size using visual cues (plate size, utensils, typical restaurant/home portions) and provide calories, protein, carbs, and fat for that entire estimated portion.
+For each dish or plate visible in the photo, break it down into its individual visible ingredients or components and list EACH as its own separate item — do not lump a whole dish into one combined entry. For example: a burger becomes separate items for the bun, patty, cheese, lettuce, and sauce; a salad becomes separate items for the greens, protein, dressing, croutons, and cheese; a plate with rice, chicken, and vegetables becomes three separate items. Only merge components into a single item when they are genuinely inseparable in reality (e.g. a smoothie, a sauce fully blended into a stir-fry, or a bread's inherent crust).
 
-If a dish is made of multiple components (e.g. a burger's bun, patty, and cheese, or a mixed stir-fry), combine them into ONE item with nutrition for the whole thing — do not also list any of those components as their own separate item. Every gram of food in the photo should be counted exactly once across the returned items.
+If the photo contains multiple distinct dishes (e.g. a burger plus a side of fries), decompose each dish independently into its own ingredients.
+
+For each ingredient item, estimate a realistic portion using visual cues (plate size, utensils, typical proportions for that kind of dish) and provide calories, protein, carbs, and fat for that ingredient's estimated portion.
+
+Every gram of food visible in the photo must be counted in exactly one item — never split the same ingredient across multiple items, and never omit a visible component.
 
 Give an overall confidence level and a one-sentence note on any assumptions you made.`;
 

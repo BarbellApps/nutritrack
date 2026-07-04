@@ -9,7 +9,7 @@ export default async function WeightPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Weight</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Weight</h1>
       <WeightTracker logs={logs} unit={profile.weight_unit} goalWeightKg={profile.goal_weight_kg} />
       <WeightChart data={logs} unit={profile.weight_unit} />
     </div>

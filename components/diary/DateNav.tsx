@@ -18,9 +18,9 @@ export function DateNav({ date, basePath = "/dashboard" }: { date: string; baseP
         </Link>
       </Button>
       <div className="flex flex-col items-center">
-        <span className="text-base font-semibold">{displayDate(date)}</span>
+        <span className="text-xl font-bold tracking-tight">{displayDate(date)}</span>
         {!isToday && (
-          <Link href={basePath} className="text-xs text-muted-foreground underline underline-offset-4">
+          <Link href={basePath} className="text-xs text-primary underline underline-offset-4">
             Back to today
           </Link>
         )}

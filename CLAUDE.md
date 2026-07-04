@@ -21,7 +21,7 @@
 | Diary | Log food to breakfast/lunch/dinner/snacks for any day; see calories remaining and macro progress |
 | Food search | Search a shared food library (cached from Open Food Facts) plus your own custom foods |
 | Barcode scanner | Scan a packaged product with the camera to pull nutrition facts instantly (`@zxing/browser` + Open Food Facts API). If the barcode isn't in Open Food Facts (or the scanner misreads it), falls back to a manual-entry form that caches the entry by barcode so a repeat scan is instant next time (`components/diary/BarcodeTab.tsx`) |
-| AI photo scan | Take or upload a food photo; Claude (vision + structured outputs) identifies each item and estimates calories/macros for review before logging |
+| AI photo scan | Take or upload a food photo; Claude (vision + structured outputs) decomposes each dish into its individual visible ingredients (e.g. a burger's bun/patty/cheese, a salad's greens/protein/dressing) as separate reviewable items with their own calories/macros, rather than one lumped entry per dish (`lib/anthropic/food-vision.ts`) |
 | Custom foods & recipes | Save your own foods, and build multi-ingredient recipes that compute total nutrition automatically |
 | Favorites | Star foods for one-tap re-logging |
 | Water tracking | Quick-add buttons + custom amount, daily goal ring, 7-day history chart |
@@ -165,20 +165,30 @@ nutritrack/
 
 ## 9. DESIGN SYSTEM
 
-**Aesthetic:** Clean, green-accented, health/wellness feel — light by default,
-full dark mode support via the `.dark` class and shadcn's `next-themes`-ready
-tokens.
+**Aesthetic:** Apple Fitness-inspired — true black background, dark-gray
+rounded cards, bold white headlines, a lime-green accent, and colored
+concentric progress rings. Dark is the default theme (`defaultTheme="dark"`
+in `app/layout.tsx`); light mode tokens still exist for the settings toggle
+but the dark tokens are the primary, tuned experience.
 
-**Color roles (see `app/globals.css`):**
-- `--primary`: emerald green — brand, primary actions, progress rings under goal
+**Color roles (see `app/globals.css`, `.dark` block):**
+- `--background: #000000`, `--card: #1c1c1e` — true black page, dark-gray cards
+- `--primary: #c6f135` — lime green; CTA text/buttons, active nav state, ring accents
 - `--destructive`: used for "over goal" states
-- Macro chart colors are fixed by role: `--chart-1` calories, `--chart-2`
-  protein, `--chart-3` carbs, `--chart-4` fat, `--chart-5` water — reuse these
+- Macro chart colors are fixed by role and modeled on Apple's Move/Exercise/Stand
+  rings: `--chart-1` calories (pink-red), `--chart-2` protein (green), `--chart-3`
+  carbs (cyan), `--chart-4` fat (amber), `--chart-5` water (teal) — reuse these
   everywhere macros/water are visualized so color coding stays consistent.
+- `CalorieSummary` renders calories/protein/carbs as three concentric rings
+  (mirroring the Activity Rings card) plus a 2x2 stat-card grid for all four
+  macros, styled after the Step Count/Step Distance cards.
 
 **Component rules:**
-- Radius: `--radius: 0.75rem` (rounder, friendlier than a data-dashboard app)
-- Mobile-first: bottom tab bar (`MobileNav`) under `md`, left `Sidebar` at `md+`
+- Radius: `--radius: 1.1rem` (rounder, friendlier than a data-dashboard app)
+- Mobile-first: floating pill-shaped bottom tab bar (`MobileNav`) under `md`,
+  left `Sidebar` at `md+`
+- Page/section titles are bold and large (`text-3xl font-bold tracking-tight`
+  or the `DateNav` date label), not small semibold labels
 - Loading: skeletons / inline spinners, never full-page spinners
 - Empty states: always include a CTA (see `EmptyState` in the Foods page)
 
