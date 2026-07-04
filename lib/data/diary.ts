@@ -6,7 +6,7 @@ export async function getFoodLogsForDate(userId: string, date: string): Promise<
   const supabase = await createClient();
   const { data } = await supabase
     .from("food_logs")
-    .select("*")
+    .select("*, food:foods(*)")
     .eq("user_id", userId)
     .eq("logged_date", date)
     .order("created_at", { ascending: true });

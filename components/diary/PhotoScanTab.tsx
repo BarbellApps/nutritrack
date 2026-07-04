@@ -5,7 +5,7 @@ import { Camera, Loader2, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { analyzeFoodPhotoAction } from "@/lib/actions/vision";
+import { analyzeFoodPhotoAction, uploadFoodScanPhoto } from "@/lib/actions/vision";
 import { addFoodLog } from "@/lib/actions/logs";
 import type { FoodPhotoAnalysis } from "@/lib/anthropic/food-vision";
 import type { MealType } from "@/types";
@@ -72,19 +72,29 @@ export function PhotoScanTab({
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<FoodPhotoAnalysis | null>(null);
   const [items, setItems] = useState<AnalyzedItem[]>([]);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [scanGroupId, setScanGroupId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   async function handleFile(file: File) {
     setAnalysis(null);
     setItems([]);
+    setPhotoUrl(null);
+    setScanGroupId(crypto.randomUUID());
     setAnalyzing(true);
 
     try {
       const { dataUrl, base64 } = await compressImage(file);
       setPreviewUrl(dataUrl);
-      const result = await analyzeFoodPhotoAction(base64, "image/jpeg");
+      // Upload alongside analysis so a slow/failed upload never blocks the
+      // scan — items just log without a photo if this comes back empty.
+      const [result, uploadedUrl] = await Promise.all([
+        analyzeFoodPhotoAction(base64, "image/jpeg"),
+        uploadFoodScanPhoto(base64, "image/jpeg").catch(() => null),
+      ]);
       setAnalysis(result);
       setItems(result.items.map((item) => ({ ...item, included: true, multiplier: 1 })));
+      setPhotoUrl(uploadedUrl);
     } catch {
       toast.error("Couldn't analyze that photo — try a clearer shot");
       setPreviewUrl(null);
@@ -97,6 +107,8 @@ export function PhotoScanTab({
     setPreviewUrl(null);
     setAnalysis(null);
     setItems([]);
+    setPhotoUrl(null);
+    setScanGroupId(null);
   }
 
   function updateItem(idx: number, patch: Partial<AnalyzedItem>) {
@@ -122,6 +134,8 @@ export function PhotoScanTab({
             proteinG: Math.round(item.protein_g * item.multiplier * 10) / 10,
             carbsG: Math.round(item.carbs_g * item.multiplier * 10) / 10,
             fatG: Math.round(item.fat_g * item.multiplier * 10) / 10,
+            photoUrl,
+            scanGroupId,
           });
         }
         toast.success(`Added ${toAdd.length} item${toAdd.length === 1 ? "" : "s"}`);

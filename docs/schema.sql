@@ -41,6 +41,8 @@ create table if not exists foods (
   fiber_g numeric(6,1),
   sugar_g numeric(6,1),
   sodium_mg numeric(7,1),
+  image_url text,
+  ingredients_text text,
   is_custom boolean not null default false,
   source text not null default 'user' check (source in ('user','off','system')),
   created_at timestamptz not null default now()
@@ -65,10 +67,13 @@ create table if not exists food_logs (
   protein_g numeric(6,1) not null default 0,
   carbs_g numeric(6,1) not null default 0,
   fat_g numeric(6,1) not null default 0,
+  photo_url text,
+  scan_group_id uuid,
   created_at timestamptz not null default now()
 );
 
 create index if not exists food_logs_user_date_idx on food_logs (user_id, logged_date);
+create index if not exists food_logs_scan_group_idx on food_logs (scan_group_id) where scan_group_id is not null;
 
 -- ============================================================
 -- water_logs
@@ -184,3 +189,13 @@ create policy "recipes_all_own" on recipes for all
 
 create policy "favorites_all_own" on favorites for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ============================================================
+-- migration: food photos + ingredients (run on an already-deployed DB —
+-- safe/no-op if you're running this whole file fresh)
+-- ============================================================
+alter table foods add column if not exists image_url text;
+alter table foods add column if not exists ingredients_text text;
+alter table food_logs add column if not exists photo_url text;
+alter table food_logs add column if not exists scan_group_id uuid;
+create index if not exists food_logs_scan_group_idx on food_logs (scan_group_id) where scan_group_id is not null;

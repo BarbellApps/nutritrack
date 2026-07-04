@@ -55,6 +55,8 @@ export async function searchFoods(query: string): Promise<Food[]> {
           fiber_g: p.fiber_g,
           sugar_g: p.sugar_g,
           sodium_mg: p.sodium_mg,
+          image_url: p.image_url,
+          ingredients_text: p.ingredients_text,
           is_custom: false,
           source: "off" as const,
         })),
@@ -99,6 +101,8 @@ export async function lookupBarcode(barcode: string): Promise<Food | null> {
       fiber_g: product.fiber_g,
       sugar_g: product.sugar_g,
       sodium_mg: product.sodium_mg,
+      image_url: product.image_url,
+      ingredients_text: product.ingredients_text,
       is_custom: false,
       source: "off",
     })

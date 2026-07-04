@@ -24,6 +24,7 @@
 | AI photo scan | Take or upload a food photo; Claude (vision + structured outputs) decomposes each dish into its individual visible ingredients (e.g. a burger's bun/patty/cheese, a salad's greens/protein/dressing) as separate reviewable items with their own calories/macros, rather than one lumped entry per dish (`lib/anthropic/food-vision.ts`) |
 | Custom foods & recipes | Save your own foods, and build multi-ingredient recipes that compute total nutrition automatically |
 | Favorites | Star foods for one-tap re-logging |
+| Food detail view | Tap any logged food (Diary), custom food, recipe, or favorite to see a full detail dialog: product photo (from Open Food Facts) or the photo you scanned, brand, full macros incl. fiber/sugar/sodium, and an ingredients list — recipe ingredients, OFF's ingredient text, or the sibling items from the same AI photo scan (`components/foods/FoodDetailDialog.tsx`) |
 | Water tracking | Quick-add buttons + custom amount, daily goal ring, 7-day history chart |
 | Weight tracking | Log daily weight, see trend vs. previous entry and a chart over time |
 | Settings | Daily calorie/macro/water goals, units (kg/lb), activity level, an "estimate for me" TDEE calculator |
@@ -95,6 +96,20 @@ Food Facts or seeded data), a real UUID means a user's private custom food.
 The RLS insert policy allows authenticated users to insert rows with
 `user_id = null` — this is what lets barcode/search results get cached into
 the shared library without a service-role client.
+
+`foods.image_url`/`ingredients_text` (from Open Food Facts) and
+`food_logs.photo_url`/`scan_group_id` (from AI photo scans) power the food
+detail dialog — see `docs/schema.sql`'s migration section if these columns
+don't exist yet on your DB. `scan_group_id` links every ingredient logged
+from one photo together (all items from `PhotoScanTab`'s "Add all" share the
+same generated UUID) so the detail view can show them as siblings.
+
+**Storage:** a public `food-photos` bucket (created via the Storage REST API,
+not SQL — no per-object RLS policy exists on it) holds AI-scanned meal
+photos. Uploads must go through `lib/supabase/admin.ts`'s service-role client
+(`uploadFoodScanPhoto` in `lib/actions/vision.ts`) since there's no RLS
+policy to satisfy as an authenticated user; reads are public since the
+bucket itself is public.
 
 ---
 

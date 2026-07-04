@@ -23,6 +23,8 @@ export interface AddFoodLogInput {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  photoUrl?: string | null;
+  scanGroupId?: string | null;
 }
 
 export async function addFoodLog(input: AddFoodLogInput) {
@@ -39,6 +41,8 @@ export async function addFoodLog(input: AddFoodLogInput) {
     protein_g: input.proteinG,
     carbs_g: input.carbsG,
     fat_g: input.fatG,
+    photo_url: input.photoUrl ?? null,
+    scan_group_id: input.scanGroupId ?? null,
   });
 
   if (error) throw new Error(error.message);

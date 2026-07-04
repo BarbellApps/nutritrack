@@ -42,6 +42,8 @@ export interface Food {
   fiber_g: number | null;
   sugar_g: number | null;
   sodium_mg: number | null;
+  image_url: string | null;
+  ingredients_text: string | null;
   is_custom: boolean;
   source: "user" | "off" | "system";
   created_at: string;
@@ -59,6 +61,8 @@ export interface FoodLog {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  photo_url: string | null;
+  scan_group_id: string | null;
   created_at: string;
   food?: Food | null;
 }
