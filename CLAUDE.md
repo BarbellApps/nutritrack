@@ -175,6 +175,15 @@ nutritrack/
 - On first dashboard load, `lib/data/profile.ts#getProfile` lazily creates a
   `profiles` row with sane defaults if the signup trigger hasn't fired yet
   (e.g. local dev without the SQL trigger applied).
+- `supabase.auth.getUser()` validates the JWT against Supabase's auth server
+  on every call — a real network round trip, not a free local decode. Use
+  `getCachedUser()` from `lib/supabase/server.ts` (wrapped in React's
+  `cache()`) anywhere in a Server Component render that needs the current
+  user, instead of calling `auth.getUser()` directly — it dedupes repeated
+  calls within one request (e.g. the dashboard layout and `getProfile()`
+  both need it) down to one. `proxy.ts` runs in the Edge middleware runtime
+  and can't share this cache, so it still does its own check — that's an
+  unavoidable second round trip, not a third.
 
 ---
 
@@ -204,7 +213,11 @@ but the dark tokens are the primary, tuned experience.
   left `Sidebar` at `md+`
 - Page/section titles are bold and large (`text-3xl font-bold tracking-tight`
   or the `DateNav` date label), not small semibold labels
-- Loading: skeletons / inline spinners, never full-page spinners
+- Loading: skeletons / inline spinners, never full-page spinners. Every
+  `(dashboard)/dashboard/*` route has a `loading.tsx` matching that page's
+  real layout — Next.js shows it instantly on navigation (via the segment's
+  implicit `<Suspense>` boundary) while the page's data fetches, so clicking
+  a nav item never leaves the old page frozen with no feedback.
 - Empty states: always include a CTA (see `EmptyState` in the Foods page)
 
 ---
@@ -268,7 +281,8 @@ but the dark tokens are the primary, tuned experience.
 - [ ] Seed a starter set of common foods so search isn't 100% OFF-dependent on day one
 - [ ] Onboarding flow (collect height/weight/goal on first login instead of defaults)
 - [ ] Push notifications / reminders to log meals
-- [ ] Error boundaries + loading.tsx per route
+- [x] `loading.tsx` per dashboard route (instant nav feedback)
+- [ ] Error boundaries per route
 - [ ] Real device PWA install test (iOS + Android)
 - [ ] Vercel deployment + custom domain
 

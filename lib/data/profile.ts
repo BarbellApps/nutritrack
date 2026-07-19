@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCachedUser } from "@/lib/supabase/server";
 import type { Profile } from "@/types";
 
 const DEFAULT_PROFILE_FIELDS = {
@@ -16,9 +16,7 @@ const DEFAULT_PROFILE_FIELDS = {
 /** Returns the current user's profile row, creating a fallback default if the signup trigger hasn't run yet. */
 export async function getProfile(): Promise<{ userId: string; email: string; profile: Profile }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) throw new Error("Not authenticated");
 
