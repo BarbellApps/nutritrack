@@ -82,9 +82,11 @@ export function QuickScanDialog() {
       <DialogTrigger asChild>
         <button
           aria-label="Quick scan"
-          className="absolute -top-6 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+          className="flex flex-1 items-center justify-center py-1"
         >
-          <Plus className="size-6" />
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95">
+            <Plus className="size-5" />
+          </span>
         </button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">

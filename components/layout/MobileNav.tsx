@@ -9,30 +9,35 @@ import { QuickScanDialog } from "@/components/diary/QuickScanDialog";
 export function MobileNav() {
   const pathname = usePathname();
 
+  function renderItem(item: (typeof NAV_ITEMS)[number]) {
+    const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn(
+          "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[10px] font-medium transition-colors",
+          active ? "bg-white/10 text-primary" : "text-muted-foreground"
+        )}
+      >
+        <item.icon className="size-5" />
+        {item.label}
+      </Link>
+    );
+  }
+
+  // The scan button sits between Water and Weight as a real flex item (not
+  // an absolute overlay) so it never visually collides with — or steals
+  // taps from — whichever tab happens to land in the middle.
   return (
     <div
       className="fixed inset-x-3 z-40 md:hidden"
       style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
     >
-      <nav className="glass-nav relative flex items-center rounded-full border border-white/10 bg-[#1c1c1ef2] px-1 py-1.5 shadow-lg shadow-black/40">
-        {NAV_ITEMS.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[10px] font-medium transition-colors",
-                active ? "bg-white/10 text-primary" : "text-muted-foreground"
-              )}
-            >
-              <item.icon className="size-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-
+      <nav className="glass-nav flex items-center rounded-full border border-white/10 bg-[#1c1c1ef2] px-1 py-1.5 shadow-lg shadow-black/40">
+        {NAV_ITEMS.slice(0, 2).map(renderItem)}
         <QuickScanDialog />
+        {NAV_ITEMS.slice(2).map(renderItem)}
       </nav>
     </div>
   );
