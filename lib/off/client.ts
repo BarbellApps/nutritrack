@@ -1,4 +1,12 @@
-const OFF_BASE = "https://world.openfoodfacts.org";
+// Text search is biased to the user's market so local products surface first
+// (Open Food Facts started in France, so its global/`world` results skew
+// heavily French). Barcode lookups stay global — scanning a specific product
+// in hand should resolve no matter where it was added. Override the market
+// with NEXT_PUBLIC_OFF_COUNTRY (an OFF country subdomain code, e.g. "nl",
+// "de", "be", "world").
+const OFF_COUNTRY = process.env.NEXT_PUBLIC_OFF_COUNTRY || "nl";
+const OFF_SEARCH_BASE = `https://${OFF_COUNTRY}.openfoodfacts.org`;
+const OFF_WORLD_BASE = "https://world.openfoodfacts.org";
 
 export interface OFFProduct {
   barcode: string;
@@ -87,7 +95,7 @@ const PRODUCT_FIELDS =
 
 export async function lookupBarcode(barcode: string): Promise<OFFProduct | null> {
   const res = await fetch(
-    `${OFF_BASE}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${PRODUCT_FIELDS}`,
+    `${OFF_WORLD_BASE}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${PRODUCT_FIELDS}`,
     {
       headers: { "User-Agent": "NutriTrack - nutritrack.app" },
       signal: AbortSignal.timeout(8000),
@@ -101,7 +109,7 @@ export async function lookupBarcode(barcode: string): Promise<OFFProduct | null>
 
 export async function searchOFF(query: string, limit = 15): Promise<OFFProduct[]> {
   const res = await fetch(
-    `${OFF_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(
+    `${OFF_SEARCH_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(
       query
     )}&search_simple=1&action=process&json=1&page_size=${limit}&fields=code,${PRODUCT_FIELDS}`,
     {
