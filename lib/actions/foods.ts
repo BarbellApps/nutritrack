@@ -1,9 +1,32 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { lookupBarcode as offLookupBarcode, searchOFF } from "@/lib/off/client";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { lookupBarcode as offLookupBarcode, searchOFF, type OFFProduct } from "@/lib/off/client";
 import { revalidatePath } from "next/cache";
 import type { Food } from "@/types";
+
+function offToRow(p: OFFProduct) {
+  return {
+    user_id: null,
+    name: p.name,
+    brand: p.brand,
+    barcode: p.barcode,
+    serving_size: p.serving_size,
+    serving_unit: p.serving_unit,
+    calories: p.calories,
+    protein_g: p.protein_g,
+    carbs_g: p.carbs_g,
+    fat_g: p.fat_g,
+    fiber_g: p.fiber_g,
+    sugar_g: p.sugar_g,
+    sodium_mg: p.sodium_mg,
+    image_url: p.image_url,
+    ingredients_text: p.ingredients_text,
+    is_custom: false,
+    source: "off" as const,
+  };
+}
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -33,41 +56,41 @@ export async function searchFoods(query: string): Promise<Food[]> {
 
   // Fall back to Open Food Facts for anything the local library lacks,
   // caching results so future searches stay fast and offline-friendly.
+  // No unique constraint exists on foods.barcode (shared + per-user rows
+  // share the table), so this dedupes by explicit select instead of
+  // ON CONFLICT — an upsert here fails outright with Postgres 42P10.
   const offResults = await searchOFF(trimmed, 15).catch(() => []);
   const knownBarcodes = new Set(localFoods.map((f) => f.barcode).filter(Boolean));
-  const fresh = offResults.filter((p) => !knownBarcodes.has(p.barcode));
+  const freshByBarcode = new Map<string, OFFProduct>();
+  for (const p of offResults) {
+    if (p.barcode && !knownBarcodes.has(p.barcode) && !freshByBarcode.has(p.barcode)) {
+      freshByBarcode.set(p.barcode, p);
+    }
+  }
+  if (freshByBarcode.size === 0) return localFoods;
 
-  if (fresh.length > 0) {
-    const { data: inserted } = await supabase
-      .from("foods")
-      .upsert(
-        fresh.map((p) => ({
-          user_id: null,
-          name: p.name,
-          brand: p.brand,
-          barcode: p.barcode,
-          serving_size: p.serving_size,
-          serving_unit: p.serving_unit,
-          calories: p.calories,
-          protein_g: p.protein_g,
-          carbs_g: p.carbs_g,
-          fat_g: p.fat_g,
-          fiber_g: p.fiber_g,
-          sugar_g: p.sugar_g,
-          sodium_mg: p.sodium_mg,
-          image_url: p.image_url,
-          ingredients_text: p.ingredients_text,
-          is_custom: false,
-          source: "off" as const,
-        })),
-        { onConflict: "barcode", ignoreDuplicates: true }
-      )
-      .select("*");
-
-    return [...localFoods, ...((inserted ?? []) as Food[])];
+  // Some barcodes may already be cached under a different product name
+  // (localized names miss the ilike match) — reuse those rows.
+  const { data: cachedRows } = await supabase
+    .from("foods")
+    .select("*")
+    .in("barcode", [...freshByBarcode.keys()]);
+  const cached = (cachedRows ?? []) as Food[];
+  for (const f of cached) {
+    if (f.barcode) freshByBarcode.delete(f.barcode);
   }
 
-  return localFoods;
+  let inserted: Food[] = [];
+  if (freshByBarcode.size > 0) {
+    const { data, error } = await supabase
+      .from("foods")
+      .insert([...freshByBarcode.values()].map(offToRow))
+      .select("*");
+    if (error) console.error("searchFoods: caching OFF results failed:", error.message);
+    inserted = (data ?? []) as Food[];
+  }
+
+  return [...localFoods, ...cached, ...inserted];
 }
 
 export async function lookupBarcode(barcode: string): Promise<Food | null> {
@@ -80,34 +103,39 @@ export async function lookupBarcode(barcode: string): Promise<Food | null> {
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing as Food;
+  if (existing) {
+    const food = existing as Food;
+    // Rows cached before image/ingredient capture existed lack both — refresh
+    // them from OFF once. Shared rows (user_id null) can't be updated under
+    // RLS by a normal user, so this goes through the service-role client.
+    if (food.source === "off" && !food.image_url) {
+      const product = await offLookupBarcode(barcode).catch(() => null);
+      if (product?.image_url || product?.ingredients_text) {
+        const admin = createAdminClient();
+        const { data: updated } = await admin
+          .from("foods")
+          .update({
+            image_url: product.image_url,
+            ingredients_text: product.ingredients_text,
+          })
+          .eq("id", food.id)
+          .select("*")
+          .single();
+        if (updated) return updated as Food;
+      }
+    }
+    return food;
+  }
 
   const product = await offLookupBarcode(barcode);
   if (!product) return null;
 
-  const { data: inserted } = await supabase
+  const { data: inserted, error } = await supabase
     .from("foods")
-    .insert({
-      user_id: null,
-      name: product.name,
-      brand: product.brand,
-      barcode: product.barcode,
-      serving_size: product.serving_size,
-      serving_unit: product.serving_unit,
-      calories: product.calories,
-      protein_g: product.protein_g,
-      carbs_g: product.carbs_g,
-      fat_g: product.fat_g,
-      fiber_g: product.fiber_g,
-      sugar_g: product.sugar_g,
-      sodium_mg: product.sodium_mg,
-      image_url: product.image_url,
-      ingredients_text: product.ingredients_text,
-      is_custom: false,
-      source: "off",
-    })
+    .insert(offToRow(product))
     .select("*")
     .single();
+  if (error) console.error("lookupBarcode: caching OFF product failed:", error.message);
 
   return (inserted as Food) ?? null;
 }

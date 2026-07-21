@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat, Camera } from "lucide-react";
+import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat, Camera, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -35,9 +35,22 @@ function FoodRow({ food, onSelect }: { food: Food; onSelect: (f: Food) => void }
     <button
       type="button"
       onClick={() => onSelect(food)}
-      className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-3 py-2.5 text-left hover:border-border hover:bg-accent/40"
+      className="flex w-full items-center gap-3 rounded-md border border-transparent px-3 py-2 text-left hover:border-border hover:bg-accent/40"
     >
-      <div className="min-w-0">
+      {food.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={food.image_url}
+          alt=""
+          loading="lazy"
+          className="size-10 shrink-0 rounded-lg border border-border bg-white object-contain"
+        />
+      ) : (
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <UtensilsCrossed className="size-4" />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{food.name}</p>
         <p className="truncate text-xs text-muted-foreground">
           {food.brand ? `${food.brand} · ` : ""}
