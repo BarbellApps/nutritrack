@@ -1,24 +1,15 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeFoodPhoto, type FoodPhotoAnalysis } from "@/lib/anthropic/food-vision";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return user.id;
-}
 
 export async function analyzeFoodPhotoAction(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<FoodPhotoAnalysis> {
-  await requireUserId();
+  await requireUser();
   return analyzeFoodPhoto(base64Image, mediaType);
 }
 
@@ -29,7 +20,7 @@ export async function uploadFoodScanPhoto(
   base64Image: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<string> {
-  const userId = await requireUserId();
+  const { userId } = await requireUser();
   const admin = createAdminClient();
   const ext = mediaType.split("/")[1];
   const path = `${userId}/${Date.now()}-${randomUUID()}.${ext}`;

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lookupBarcode as offLookupBarcode, searchOFF, type OFFProduct } from "@/lib/off/client";
 import { revalidatePath } from "next/cache";
@@ -28,20 +28,11 @@ function offToRow(p: OFFProduct) {
   };
 }
 
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return { supabase, userId: user.id };
-}
-
 export async function searchFoods(query: string): Promise<Food[]> {
   const trimmed = query.trim();
   if (trimmed.length < 2) return [];
 
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
 
   const { data: local } = await supabase
     .from("foods")
@@ -94,7 +85,7 @@ export async function searchFoods(query: string): Promise<Food[]> {
 }
 
 export async function lookupBarcode(barcode: string): Promise<Food | null> {
-  const { supabase } = await requireUserId();
+  const { supabase } = await requireUser();
 
   const { data: existing } = await supabase
     .from("foods")
@@ -156,7 +147,7 @@ export interface CustomFoodInput {
 }
 
 export async function createCustomFood(input: CustomFoodInput): Promise<Food> {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
 
   const { data, error } = await supabase
     .from("foods")
@@ -186,7 +177,7 @@ export async function createCustomFood(input: CustomFoodInput): Promise<Food> {
 }
 
 export async function deleteCustomFood(id: string) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
   await supabase.from("foods").delete().eq("id", id).eq("user_id", userId);
   revalidatePath("/dashboard/foods");
 }

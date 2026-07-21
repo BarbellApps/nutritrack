@@ -1,17 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ActivityLevel, WeightUnit } from "@/types";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return { supabase, userId: user.id };
-}
 
 export interface UpdateProfileInput {
   fullName?: string;
@@ -27,7 +18,7 @@ export interface UpdateProfileInput {
 }
 
 export async function updateProfile(input: UpdateProfileInput) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.fullName !== undefined) patch.full_name = input.fullName;

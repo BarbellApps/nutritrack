@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { getSigningKeys } from "./jwks";
+
+export interface AuthedUser {
+  id: string;
+  email: string;
+}
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -28,14 +34,29 @@ export async function createClient() {
   );
 }
 
-// getUser() validates the JWT against Supabase's auth server on every call —
-// a real network round trip. proxy.ts already does this once per request for
-// route gatekeeping; layouts and pages need the result too, so cache() dedupes
-// those into a single extra call instead of one per component that asks.
-export const getCachedUser = cache(async () => {
+// Verifies the access token locally against the cached public JWKS — no
+// network round trip (getUser() would cost a full trip to the US auth server
+// on every call). cache() dedupes within one render pass so the layout and
+// page share a single verification.
+export const getCachedUser = cache(async (): Promise<AuthedUser | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const keys = await getSigningKeys();
+  const { data } = await supabase.auth.getClaims(undefined, keys ? { keys } : undefined);
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : "" };
 });
+
+// Shared auth gate for Server Actions: local JWT verification + the request's
+// Supabase client. Throws when unauthenticated so callers can't proceed.
+export async function requireUser(): Promise<{
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string;
+}> {
+  const supabase = await createClient();
+  const keys = await getSigningKeys();
+  const { data } = await supabase.auth.getClaims(undefined, keys ? { keys } : undefined);
+  const userId = data?.claims?.sub;
+  if (!userId) throw new Error("Not authenticated");
+  return { supabase, userId };
+}

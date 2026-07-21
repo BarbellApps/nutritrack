@@ -1,17 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MealType } from "@/types";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  return { supabase, userId: user.id };
-}
 
 export interface AddFoodLogInput {
   foodId?: string | null;
@@ -28,7 +19,7 @@ export interface AddFoodLogInput {
 }
 
 export async function addFoodLog(input: AddFoodLogInput) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
 
   const { error } = await supabase.from("food_logs").insert({
     user_id: userId,
@@ -50,7 +41,7 @@ export async function addFoodLog(input: AddFoodLogInput) {
 }
 
 export async function deleteFoodLog(id: string) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireUser();
   await supabase.from("food_logs").delete().eq("id", id).eq("user_id", userId);
   revalidatePath("/dashboard");
 }
