@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat, Camera, UtensilsCrossed } from "lucide-react";
+import { Plus, Loader2, Search, Barcode, Star, BookOpen, ChefHat, Camera, UtensilsCrossed, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import { logRecipeAsMeal } from "@/lib/actions/recipes";
 import { scaleNutrition } from "@/lib/utils/nutrition";
 import { BarcodeTab } from "./BarcodeTab";
 import { PhotoScanTab } from "./PhotoScanTab";
+import { ManualEntryTab } from "./ManualEntryTab";
 import { ServingPicker } from "./ServingPicker";
 import type { Favorite, Food, MealType, Recipe } from "@/types";
 
@@ -154,7 +155,7 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
           />
         ) : (
           <Tabs defaultValue="search">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="search">
                 <Search className="size-4" />
               </TabsTrigger>
@@ -163,6 +164,9 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
               </TabsTrigger>
               <TabsTrigger value="photo">
                 <Camera className="size-4" />
+              </TabsTrigger>
+              <TabsTrigger value="manual">
+                <PencilLine className="size-4" />
               </TabsTrigger>
               <TabsTrigger value="favorites">
                 <Star className="size-4" />
@@ -210,6 +214,17 @@ export function AddFoodDialog({ mealType, loggedDate, favorites, customFoods, re
 
             <TabsContent value="photo">
               <PhotoScanTab
+                mealType={mealType}
+                loggedDate={loggedDate}
+                onLogged={() => {
+                  setOpen(false);
+                  reset();
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="manual">
+              <ManualEntryTab
                 mealType={mealType}
                 loggedDate={loggedDate}
                 onLogged={() => {
